@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Dashboard Isu Kabupaten Bogor</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+  <header>
+    <h1>Dashboard Isu Kabupaten Bogor</h1>
+    <p>Pantau dan kelola isu untuk ditindaklanjuti.</p>
+    <button id="modeLayar">Mode Layar</button>
+  </header>
+
+  <main>
+    <section class="ringkasan">
+      <div class="kartu-ringkasan">
+        <p>Total Isu</p>
+        <strong id="totalIsu">0</strong>
+      </div>
+
+      <div class="kartu-ringkasan">
+        <p>Isu Baru</p>
+        <strong id="isuBaru">0</strong>
+      </div>
+
+      <div class="kartu-ringkasan">
+        <p>Diproses</p>
+        <strong id="isuDiproses">0</strong>
+      </div>
+
+      <div class="kartu-ringkasan">
+        <p>Selesai</p>
+        <strong id="isuSelesai">0</strong>
+      </div>
+    </section>
+
+    <section class="temuan-kotak">
+      <div class="baris-judul">
+        <div>
+          <h2>Temuan Otomatis</h2>
+          <p>Berita dari ANTARA Bogor Update. Tim perlu memverifikasi sebelum menjadikannya isu.</p>
+          <p id="waktuTerakhir">Terakhir diperbarui: memuat...</p>
+        </div>
+
+        <button id="perbaruiBerita">Perbarui Berita</button>
+      </div>
+
+      <div id="daftarTemuan"></div>
+    </section>
+
+    <section class="filter-kotak">
+      <label for="filterStatus"><b>Tampilkan isu:</b></label>
+
+      <select id="filterStatus">
+        <option value="Semua">Semua status</option>
+        <option value="Baru">Baru</option>
+        <option value="Diproses">Diproses</option>
+        <option value="Selesai">Selesai</option>
+      </select>
+    </section>
+
+    <section class="form-kotak">
+      <h2>Tambah Isu Baru</h2>
+
+      <form id="formIsu">
+        <input id="judul" type="text" placeholder="Judul isu" required>
+
+        <select id="kecamatan" required>
+          <option value="">Pilih kecamatan</option>
+          <option value="Cibinong">Cibinong</option>
+          <option value="Ciomas">Ciomas</option>
+          <option value="Gunung Putri">Gunung Putri</option>
+          <option value="Leuwiliang">Leuwiliang</option>
+          <option value="Parung">Parung</option>
+        </select>
+
+        <select id="kategori" required>
+          <option value="">Pilih kategori</option>
+          <option value="Infrastruktur">Infrastruktur</option>
+          <option value="Lingkungan">Lingkungan</option>
+          <option value="Kesehatan">Kesehatan</option>
+          <option value="Pendidikan">Pendidikan</option>
+          <option value="Keamanan">Keamanan</option>
+        </select>
+
+        <select id="prioritas" required>
+          <option value="">Pilih prioritas</option>
+          <option value="Tinggi">Tinggi</option>
+          <option value="Sedang">Sedang</option>
+          <option value="Rendah">Rendah</option>
+        </select>
+
+        <select id="status" required>
+          <option value="">Pilih status</option>
+          <option value="Baru">Baru</option>
+          <option value="Diproses">Diproses</option>
+          <option value="Selesai">Selesai</option>
+        </select>
+
+        <button type="submit">Simpan Isu</button>
+      </form>
+    </section>
+
+    <section>
+      <h2>Daftar Isu</h2>
+      <div id="daftarIsu"></div>
+    </section>
+  </main>
+
+  <script>
+    const formIsu = document.getElementById("formIsu");
+    const daftarIsu = document.getElementById("daftarIsu");
+    const daftarTemuan = document.getElementById("daftarTemuan");
+    const filterStatus = document.getElementById("filterStatus");
+    const modeLayar = document.getElementById("modeLayar");
+    const perbaruiBerita = document.getElementById("perbaruiBerita");
+    const waktuTerakhir = document.getElementById("waktuTerakhir");
+
+    let semuaIsu = JSON.parse(localStorage.getItem("isuBogor")) || [];
+    let semuaTemuan = [];
+
+    function tampilkanRingkasan() {
+      let baru = 0;
+      let diproses = 0;
+      let selesai = 0;
+
+      for (let i = 0; i < semuaIsu.length; i++) {
+        const status = semuaIsu[i].status || "Baru";
+
+        if (status === "Baru") {
+          baru++;
+        } else if (status === "Diproses") {
+          diproses++;
+        } else if (status === "Selesai") {
+          selesai++;
+        }
+      }
+
+      document.getElementById("totalIsu").textContent = semuaIsu.length;
+      document.getElementById("isuBaru").textContent = baru;
+      document.getElementById("isuDiproses").textContent = diproses;
+      document.getElementById("isuSelesai").textContent = selesai;
+    }
+
+    function tampilkanIsu() {
+      daftarIsu.innerHTML = "";
+      let jumlahTampil = 0;
+
+      if (semuaIsu.length === 0) {
+        daftarIsu.innerHTML = '<p class="kosong">Belum ada isu. Tambahkan isu melalui form atau dari temuan otomatis.</p>';
+        return;
+      }
+
+      for (let i = 0; i < semuaIsu.length; i++) {
+        const isu = semuaIsu[i];
+        const statusIsu = isu.status || "Baru";
+
+        if (filterStatus.value !== "Semua" && statusIsu !== filterStatus.value) {
+          continue;
+        }
+
+        jumlahTampil++;
+
+        daftarIsu.innerHTML +=
+          '<article class="isu">' +
+          '<h3>' + isu.judul + '</h3>' +
+          '<p><b>Kecamatan:</b> ' + isu.kecamatan + '</p>' +
+          '<p><b>Kategori:</b> ' + isu.kategori + '</p>' +
+          '<p><b>Prioritas:</b> <span class="prioritas ' + isu.prioritas + '">' + isu.prioritas + '</span></p>' +
+          '<p><b>Status:</b> <span class="status ' + statusIsu + '">' + statusIsu + '</span></p>' +
+          (isu.sumber ? '<p><b>Sumber:</b> ' + isu.sumber + '</p>' : '') +
+          '<button class="ubah" onclick="ubahStatus(' + i + ')">Ubah Status</button> ' +
+          '<button class="hapus" onclick="hapusIsu(' + i + ')">Hapus</button>' +
+          '</article>';
+      }
+
+      if (jumlahTampil === 0) {
+        daftarIsu.innerHTML = '<p class="kosong">Tidak ada isu dengan status tersebut.</p>';
+      }
+    }
+
+    function tampilkanTemuan() {
+      daftarTemuan.innerHTML = "";
+
+      if (semuaTemuan.length === 0) {
+        daftarTemuan.innerHTML = '<p class="kosong">Belum ada temuan otomatis.</p>';
+        return;
+      }
+
+      for (let i = 0; i < semuaTemuan.length; i++) {
+        const temuan = semuaTemuan[i];
+
+        daftarTemuan.innerHTML +=
+          '<article class="temuan">' +
+          '<h3>' + temuan.judul + '</h3>' +
+          '<p><b>Sumber:</b> ' + temuan.sumber + '</p>' +
+          '<p><b>Tanggal:</b> ' + temuan.tanggal + '</p>' +
+          '<a href="' + temuan.link + '" target="_blank">Buka berita asli</a><br>' +
+          '<button class="masukkan" onclick="jadikanIsu(' + i + ')">Jadikan Isu</button>' +
+          '</article>';
+      }
+    }
+
+    async function ambilTemuan() {
+      try {
+        const hasil = await fetch("/api/temuan");
+        semuaTemuan = await hasil.json();
+        tampilkanTemuan();
+
+        const status = await fetch("/api/status");
+        const dataStatus = await status.json();
+        waktuTerakhir.textContent = "Terakhir diperbarui: " + dataStatus.waktu;
+      } catch (error) {
+        daftarTemuan.innerHTML = '<p class="kosong">Gagal membaca temuan otomatis.</p>';
+      }
+    }
+
+    async function perbaruiTemuan() {
+      perbaruiBerita.textContent = "Mengambil berita...";
+      perbaruiBerita.disabled = true;
+
+      try {
+        const hasil = await fetch("/api/perbarui-berita", {
+          method: "POST"
+        });
+
+        const data = await hasil.json();
+
+        if (!data.berhasil) {
+          alert("Gagal memperbarui berita.");
+          return;
+        }
+
+        await ambilTemuan();
+        alert("Berita terbaru berhasil dimuat.");
+      } catch (error) {
+        alert("Gagal terhubung ke program pengambil berita.");
+      } finally {
+        perbaruiBerita.textContent = "Perbarui Berita";
+        perbaruiBerita.disabled = false;
+      }
+    }
+
+    function jadikanIsu(index) {
+      const temuan = semuaTemuan[index];
+
+      const sudahAda = semuaIsu.some(function(isu) {
+        return isu.linkSumber === temuan.link;
+      });
+
+      if (sudahAda) {
+        alert("Berita ini sudah masuk ke daftar isu.");
+        return;
+      }
+
+      semuaIsu.push({
+        judul: temuan.judul,
+        kecamatan: "Perlu diverifikasi",
+        kategori: "Temuan media",
+        prioritas: "Sedang",
+        status: "Baru",
+        sumber: temuan.sumber,
+        linkSumber: temuan.link
+      });
+
+      localStorage.setItem("isuBogor", JSON.stringify(semuaIsu));
+      perbaruiDashboard();
+      alert("Temuan berhasil dimasukkan ke daftar isu.");
+    }
+
+    function perbaruiDashboard() {
+      tampilkanRingkasan();
+      tampilkanIsu();
+    }
+
+    function ubahStatus(index) {
+      const statusSekarang = semuaIsu[index].status || "Baru";
+
+      if (statusSekarang === "Baru") {
+        semuaIsu[index].status = "Diproses";
+      } else if (statusSekarang === "Diproses") {
+        semuaIsu[index].status = "Selesai";
+      } else {
+        semuaIsu[index].status = "Baru";
+      }
+
+      localStorage.setItem("isuBogor", JSON.stringify(semuaIsu));
+      perbaruiDashboard();
+    }
+
+    function hapusIsu(index) {
+      if (confirm("Yakin ingin menghapus isu ini?")) {
+        semuaIsu.splice(index, 1);
+        localStorage.setItem("isuBogor", JSON.stringify(semuaIsu));
+        perbaruiDashboard();
+      }
+    }
+
+    formIsu.addEventListener("submit", function(event) {
+      event.preventDefault();
+
+      semuaIsu.push({
+        judul: document.getElementById("judul").value,
+        kecamatan: document.getElementById("kecamatan").value,
+        kategori: document.getElementById("kategori").value,
+        prioritas: document.getElementById("prioritas").value,
+        status: document.getElementById("status").value
+      });
+
+      localStorage.setItem("isuBogor", JSON.stringify(semuaIsu));
+      formIsu.reset();
+      perbaruiDashboard();
+    });
+
+    filterStatus.addEventListener("change", tampilkanIsu);
+    perbaruiBerita.addEventListener("click", perbaruiTemuan);
+
+    modeLayar.addEventListener("click", function() {
+      document.body.classList.toggle("mode-layar");
+
+      if (document.body.classList.contains("mode-layar")) {
+        modeLayar.textContent = "Kembali ke Mode Tim";
+      } else {
+        modeLayar.textContent = "Mode Layar";
+      }
+    });
+
+    perbaruiDashboard();
+    ambilTemuan();
+
+    setInterval(ambilTemuan, 300000);
+  </script>
+</body>
+</html>
